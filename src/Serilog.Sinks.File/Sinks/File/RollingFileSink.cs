@@ -20,6 +20,7 @@ using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
+using System.Collections.Generic;
 
 namespace Serilog.Sinks.File
 {
@@ -29,6 +30,7 @@ namespace Serilog.Sinks.File
         readonly ITextFormatter _textFormatter;
         readonly long? _fileSizeLimitBytes;
         readonly int? _retainedFileCountLimit;
+        readonly TimeSpan? _retainedFileTimeLimit;
         readonly Encoding _encoding;
         readonly bool _buffered;
         readonly bool _shared;
@@ -50,16 +52,19 @@ namespace Serilog.Sinks.File
                               bool shared,
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              FileLifecycleHooks hooks)
+                              FileLifecycleHooks hooks,
+                              TimeSpan? retainedFileTimeLimit)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.");
-            if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative");
+            if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
+            if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
 
             _roller = new PathRoller(path, rollingInterval);
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
+            _retainedFileTimeLimit = retainedFileTimeLimit;
             _encoding = encoding;
             _buffered = buffered;
             _shared = shared;
@@ -173,7 +178,7 @@ namespace Serilog.Sinks.File
 
         void ApplyRetentionPolicy(string currentFilePath)
         {
-            if (_retainedFileCountLimit == null) return;
+            if (_retainedFileCountLimit == null && _retainedFileTimeLimit == null) return;
 
             var currentFileName = Path.GetFileName(currentFilePath);
 
@@ -181,17 +186,21 @@ namespace Serilog.Sinks.File
             // because files are only opened on response to an event being processed.
             var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                 .Select(Path.GetFileName)
-                .Union(new [] { currentFileName });
+                .Union(new[] { currentFileName });
 
             var newestFirst = _roller
                 .SelectMatches(potentialMatches)
                 .OrderByDescending(m => m.DateTime)
                 .ThenByDescending(m => m.SequenceNumber)
-                .Select(m => m.Filename);
+                .Select(m => new { m.Filename, m.DateTime });
 
             var toRemove = newestFirst
-                .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName, n) != 0)
-                .Skip(_retainedFileCountLimit.Value - 1)
+                .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName, n.Filename) != 0)
+                .SkipWhile((x, i) => (i < (_retainedFileCountLimit - 1 ?? 0)) &&
+                                     (!_retainedFileTimeLimit.HasValue ||
+                                          x.DateTime.HasValue &&
+                                          DateTime.Now.Subtract(_retainedFileTimeLimit.Value).CompareTo(x.DateTime.Value) <= 0))
+                .Select(x => x.Filename)
                 .ToList();
 
             foreach (var obsolete in toRemove)
