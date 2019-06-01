@@ -191,15 +191,11 @@ namespace Serilog.Sinks.File
             var newestFirst = _roller
                 .SelectMatches(potentialMatches)
                 .OrderByDescending(m => m.DateTime)
-                .ThenByDescending(m => m.SequenceNumber)
-                .Select(m => new { m.Filename, m.DateTime });
+                .ThenByDescending(m => m.SequenceNumber);
 
             var toRemove = newestFirst
                 .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName, n.Filename) != 0)
-                .SkipWhile((x, i) => (i < (_retainedFileCountLimit - 1 ?? 0)) &&
-                                     (!_retainedFileTimeLimit.HasValue ||
-                                          x.DateTime.HasValue &&
-                                          DateTime.Now.Subtract(_retainedFileTimeLimit.Value).CompareTo(x.DateTime.Value) <= 0))
+                .SkipWhile(FilterFiles)
                 .Select(x => x.Filename)
                 .ToList();
 
@@ -215,6 +211,17 @@ namespace Serilog.Sinks.File
                     SelfLog.WriteLine("Error {0} while removing obsolete log file {1}", ex, fullPath);
                 }
             }
+        }
+
+        private bool FilterFiles(RollingLogFile file, int index)
+        {
+            var isInCountLimit = index < (_retainedFileCountLimit - 1 ?? 0);
+
+            var isInTimeLimit = !_retainedFileTimeLimit.HasValue;
+            if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue)
+                isInTimeLimit = DateTime.Now.Subtract(_retainedFileTimeLimit.Value).CompareTo(file.DateTime.Value) <= 0;
+
+            return isInCountLimit && isInTimeLimit;
         }
 
         public void Dispose()
