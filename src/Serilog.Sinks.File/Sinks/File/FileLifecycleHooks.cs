@@ -37,17 +37,13 @@ namespace Serilog.Sinks.File
         public virtual Stream OnFileOpened(Stream underlyingStream, Encoding encoding) => underlyingStream;
 
         /// <summary>
-        /// Method called on log files that were marked as obsolete (old) and by default would be deleted.
-        /// This can be used to move old logs to archive location or send to backup server
+        /// Method called on log files that were marked as obsolete (old) and would be deleted.
+        /// This can be used to copy old logs to archive location or send to backup server
         /// </summary>
         /// <remarks>
         /// Executing long synchronous operation may affect responsiveness of application
         /// </remarks>
         /// <param name="fullPath">Log file full path</param>
-        /// <returns>
-        /// Return if Serilog should delete file.
-        /// Warning: returning false and keeping file in same place will result in calling this method again in next scan for obsolete files
-        /// </returns>
-        public virtual bool OnFileRemoving(string fullPath) => true;
+        public virtual void OnFileRemoving(string fullPath) {}
     }
 }
