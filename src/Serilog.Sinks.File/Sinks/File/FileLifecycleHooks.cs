@@ -19,6 +19,7 @@ namespace Serilog.Sinks.File
 {
     /// <summary>
     /// Enables hooking into log file lifecycle events.
+    /// Hooks run synchronously and therefore may affect responsiveness of the application if long operations are performed.
     /// </summary>
     public abstract class FileLifecycleHooks
     {
@@ -37,13 +38,10 @@ namespace Serilog.Sinks.File
         public virtual Stream OnFileOpened(Stream underlyingStream, Encoding encoding) => underlyingStream;
 
         /// <summary>
-        /// Method called on log files that were marked as obsolete (old) and would be deleted.
-        /// This can be used to copy old logs to archive location or send to backup server
+        /// Called before an obsolete (rolling) log file is deleted.
+        /// This can be used to copy old logs to an archive location or send to a backup server.
         /// </summary>
-        /// <remarks>
-        /// Executing long synchronous operation may affect responsiveness of application
-        /// </remarks>
-        /// <param name="fullPath">Log file full path</param>
-        public virtual void OnFileRemoving(string fullPath) {}
+        /// <param name="path">The full path to the file being deleted.</param>
+        public virtual void OnFileDeleting(string path) {}
     }
 }

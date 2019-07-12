@@ -199,8 +199,7 @@ namespace Serilog.Sinks.File
                 var fullPath = Path.Combine(_roller.LogFileDirectory, obsolete);
                 try
                 {
-                    if (_hooks != null) _hooks.OnFileRemoving(fullPath);
-
+                    _hooks?.OnFileDeleting(fullPath);
                     System.IO.File.Delete(fullPath);
                 }
                 catch (Exception ex)
