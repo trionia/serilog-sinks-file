@@ -19,6 +19,7 @@ namespace Serilog.Sinks.File
 {
     /// <summary>
     /// Enables hooking into log file lifecycle events.
+    /// Hooks run synchronously and therefore may affect responsiveness of the application if long operations are performed.
     /// </summary>
     public abstract class FileLifecycleHooks
     {
@@ -35,5 +36,12 @@ namespace Serilog.Sinks.File
         /// <param name="encoding">The encoding to use when reading/writing to the stream.</param>
         /// <returns>The <see cref="Stream"/> Serilog should use when writing events to the log file.</returns>
         public virtual Stream OnFileOpened(Stream underlyingStream, Encoding encoding) => underlyingStream;
+
+        /// <summary>
+        /// Called before an obsolete (rolling) log file is deleted.
+        /// This can be used to copy old logs to an archive location or send to a backup server.
+        /// </summary>
+        /// <param name="path">The full path to the file being deleted.</param>
+        public virtual void OnFileDeleting(string path) {}
     }
 }
