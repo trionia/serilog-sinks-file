@@ -1,10 +1,10 @@
-# Serilog.Sinks.File [![Build status](https://ci.appveyor.com/api/projects/status/hh9gymy0n6tne46j?svg=true)](https://ci.appveyor.com/project/serilog/serilog-sinks-file) [![Travis build](https://travis-ci.org/serilog/serilog-sinks-file.svg)](https://travis-ci.org/serilog/serilog-sinks-file) [![NuGet Version](http://img.shields.io/nuget/v/Serilog.Sinks.File.svg?style=flat)](https://www.nuget.org/packages/Serilog.Sinks.File/) [![Documentation](https://img.shields.io/badge/docs-wiki-yellow.svg)](https://github.com/serilog/serilog/wiki) [![Join the chat at https://gitter.im/serilog/serilog](https://img.shields.io/gitter/room/serilog/serilog.svg)](https://gitter.im/serilog/serilog)
+# Serilog.Sinks.File [![Build status](https://ci.appveyor.com/api/projects/status/hh9gymy0n6tne46j?svg=true)](https://ci.appveyor.com/project/serilog/serilog-sinks-file) [![NuGet Version](http://img.shields.io/nuget/v/Serilog.Sinks.File.svg?style=flat)](https://www.nuget.org/packages/Serilog.Sinks.File/) [![Documentation](https://img.shields.io/badge/docs-wiki-yellow.svg)](https://github.com/serilog/serilog/wiki) [![Join the chat at https://gitter.im/serilog/serilog](https://img.shields.io/gitter/room/serilog/serilog.svg)](https://gitter.im/serilog/serilog)
 
 Writes [Serilog](https://serilog.net) events to one or more text files.
 
 ### Getting started
 
-Install the [Serilog.Sinks.File](https://nuget.org/serilog/serilog-sinks-file) package from NuGet:
+Install the [Serilog.Sinks.File](https://www.nuget.org/packages/Serilog.Sinks.File/) package from NuGet:
 
 ```powershell
 Install-Package Serilog.Sinks.File
@@ -30,16 +30,18 @@ log20180702.txt
 
 ### Limits
 
-To avoid bringing down apps with runaway disk usage the file sink **limits file size to 1GB by default**. The limit can be increased or removed using the `fileSizeLimitBytes` parameter.
+To avoid bringing down apps with runaway disk usage the file sink **limits file size to 1GB by default**. Once the limit is reached, no further events will be written until the next roll point (see also: [Rolling policies](#rolling-policies) below).
+
+The limit can be changed or removed using the `fileSizeLimitBytes` parameter.
 
 ```csharp
     .WriteTo.File("log.txt", fileSizeLimitBytes: null)
-```
+``` 
 
 For the same reason, only **the most recent 31 files** are retained by default (i.e. one long month). To change or remove this limit, pass the `retainedFileCountLimit` parameter.
 
 ```csharp
-    .WriteTo.RollingFile("log.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: null)
+    .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: null)
 ```
 
 ### Rolling policies
@@ -86,7 +88,7 @@ In your application's `App.config` or `Web.config` file, specify the file sink a
 <configuration>
   <appSettings>
     <add key="serilog:using:File" value="Serilog.Sinks.File" />
-    <add key="serilog:write-to:File.pathFormat" value="log.txt" />
+    <add key="serilog:write-to:File.path" value="log.txt" />
 ```
 
 The parameters that can be set through the `serilog:write-to:File` keys are the method parameters accepted by the `WriteTo.File()` configuration method. This means, for example, that the `fileSizeLimitBytes` parameter can be set with:
@@ -154,8 +156,8 @@ The format is controlled using an _output template_, which the file configuratio
 The default format above corresponds to an output template like:
 
 ```csharp
-    .WriteTo.File("log.txt",
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{u3}] {Message:lj}{NewLine}{Exception}")
+  .WriteTo.File("log.txt",
+    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
 ```
 
 ##### JSON event formatting
