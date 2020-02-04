@@ -171,12 +171,12 @@ namespace Serilog.Sinks.File
                     throw;
                 }
 
-                ApplyRetentionPolicy(path);
+                ApplyRetentionPolicy(path, now);
                 return;
             }
         }
 
-        void ApplyRetentionPolicy(string currentFilePath)
+        void ApplyRetentionPolicy(string currentFilePath, DateTime now)
         {
             if (_retainedFileCountLimit == null && _retainedFileTimeLimit == null) return;
 
@@ -195,7 +195,7 @@ namespace Serilog.Sinks.File
 
             var toRemove = newestFirst
                 .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName, n.Filename) != 0)
-                .SkipWhile(FilterFiles)
+                .SkipWhile((f, i) => ShouldRetainFile(f, i, now))
                 .Select(x => x.Filename)
                 .ToList();
 
@@ -213,15 +213,18 @@ namespace Serilog.Sinks.File
             }
         }
 
-        private bool FilterFiles(RollingLogFile file, int index)
+        bool ShouldRetainFile(RollingLogFile file, int index, DateTime now)
         {
-            var isInCountLimit = index < (_retainedFileCountLimit - 1 ?? 0);
+            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value)
+                return false;
 
-            var isInTimeLimit = !_retainedFileTimeLimit.HasValue;
-            if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue)
-                isInTimeLimit = DateTime.Now.Subtract(_retainedFileTimeLimit.Value).CompareTo(file.DateTime.Value) <= 0;
-
-            return isInCountLimit && isInTimeLimit;
+            if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue &&
+                file.DateTime.Value < now.Subtract(_retainedFileTimeLimit.Value))
+            {
+                return false;
+            }
+            
+            return true;
         }
 
         public void Dispose()
