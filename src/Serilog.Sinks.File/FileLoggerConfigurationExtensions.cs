@@ -165,7 +165,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -181,7 +181,7 @@ namespace Serilog
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
         /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
         /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
-        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
         /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
         /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
@@ -227,12 +227,16 @@ namespace Serilog
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
         /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
         /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
-        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
         /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
         /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
+        /// <param name="retainedFileTimeLimit">The maximum time after the end of an interval that a rolling log file will be retained.
+        /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
+        /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
+        /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
@@ -249,7 +253,8 @@ namespace Serilog
             bool rollOnFileSizeLimit = false,
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
             Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            FileLifecycleHooks hooks = null,
+            TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -258,7 +263,7 @@ namespace Serilog
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
                 levelSwitch, buffered, shared, flushToDiskInterval,
-                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks);
+                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
         }
 
         /// <summary>
@@ -267,7 +272,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -289,6 +294,10 @@ namespace Serilog
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
+        /// <param name="retainedFileTimeLimit">The maximum time after the end of an interval that a rolling log file will be retained.
+        /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
+        /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
+        /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
@@ -304,7 +313,8 @@ namespace Serilog
             bool rollOnFileSizeLimit = false,
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
             Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            FileLifecycleHooks hooks = null,
+            TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -312,7 +322,7 @@ namespace Serilog
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
                 buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-                retainedFileCountLimit, hooks);
+                retainedFileCountLimit, hooks, retainedFileTimeLimit);
         }
 
         /// <summary>
@@ -432,7 +442,7 @@ namespace Serilog
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-                false, null, encoding, RollingInterval.Infinite, false, null, hooks);
+                false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
         }
 
         static LoggerConfiguration ConfigureFile(
@@ -450,13 +460,15 @@ namespace Serilog
             RollingInterval rollingInterval,
             bool rollOnFileSizeLimit,
             int? retainedFileCountLimit,
-            FileLifecycleHooks hooks)
+            FileLifecycleHooks hooks,
+            TimeSpan? retainedFileTimeLimit)
         {
             if (addSink == null) throw new ArgumentNullException(nameof(addSink));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.", nameof(fileSizeLimitBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
+            if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
             if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
 
@@ -464,7 +476,7 @@ namespace Serilog
 
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
             }
             else
             {
