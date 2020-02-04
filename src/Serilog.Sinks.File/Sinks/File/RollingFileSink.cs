@@ -204,11 +204,12 @@ namespace Serilog.Sinks.File
                 var fullPath = Path.Combine(_roller.LogFileDirectory, obsolete);
                 try
                 {
+                    _hooks?.OnFileDeleting(fullPath);
                     System.IO.File.Delete(fullPath);
                 }
                 catch (Exception ex)
                 {
-                    SelfLog.WriteLine("Error {0} while removing obsolete log file {1}", ex, fullPath);
+                    SelfLog.WriteLine("Error {0} while processing obsolete log file {1}", ex, fullPath);
                 }
             }
         }

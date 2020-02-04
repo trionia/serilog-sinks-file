@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -125,6 +125,27 @@ namespace Serilog.Sinks.File.Tests
                     Assert.True(!System.IO.File.Exists(files[0]));
                     Assert.True(System.IO.File.Exists(files[1]));
                     Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+      
+        [Fact]
+        public void WhenRetentionCountAndArchivingHookIsSetOldFilesAreCopiedAndOriginalDeleted()
+        {
+            const string archiveDirectory = "OldLogs";
+            LogEvent e1 = Some.InformationEvent(),
+                    e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
+                    e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            TestRollingEventSequence(
+                (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day, hooks: new ArchiveOldLogsHook(archiveDirectory)),
+                new[] {e1, e2, e3},
+                files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                    Assert.True(System.IO.File.Exists(ArchiveOldLogsHook.AddTopDirectory(files[0], archiveDirectory)));
                 });
         }
 
