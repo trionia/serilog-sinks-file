@@ -1,16 +1,15 @@
 version: '{build}'
 skip_tags: true
 image:
-  - Visual Studio 2017
-  - Ubuntu
-configuration: Release
+  - Visual Studio 2019
+  - Ubuntu1804
 build_script:
 - ps: ./Build.ps1
 for:
 -
   matrix:
     only:
-      - image: Ubuntu
+      - image: Ubuntu1804
   build_script:
     - sh build.sh
 test: off

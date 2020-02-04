@@ -20,7 +20,6 @@ using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
-using System.Collections.Generic;
 
 namespace Serilog.Sinks.File
 {
@@ -216,7 +215,7 @@ namespace Serilog.Sinks.File
 
         bool ShouldRetainFile(RollingLogFile file, int index, DateTime now)
         {
-            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value)
+            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value - 1)
                 return false;
 
             if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue &&

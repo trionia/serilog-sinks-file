@@ -8,6 +8,7 @@ using Xunit;
 using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
 using Serilog.Configuration;
+using Serilog.Core;
 
 namespace Serilog.Sinks.File.Tests
 {
@@ -142,7 +143,7 @@ namespace Serilog.Sinks.File.Tests
                 files =>
                 {
                     Assert.Equal(3, files.Count);
-                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.False(System.IO.File.Exists(files[0]));
                     Assert.True(System.IO.File.Exists(files[1]));
                     Assert.True(System.IO.File.Exists(files[2]));
                     Assert.True(System.IO.File.Exists(ArchiveOldLogsHook.AddTopDirectory(files[0], archiveDirectory)));
@@ -241,7 +242,7 @@ namespace Serilog.Sinks.File.Tests
             var folder = Path.Combine(temp, Guid.NewGuid().ToString());
             var pathFormat = Path.Combine(folder, fileName);
 
-            ILogger log = null;
+            Logger log = null;
 
             try
             {
@@ -255,8 +256,7 @@ namespace Serilog.Sinks.File.Tests
             }
             finally
             {
-                var disposable = (IDisposable)log;
-                if (disposable != null) disposable.Dispose();
+                log?.Dispose();
                 Directory.Delete(temp, true);
             }
         }
