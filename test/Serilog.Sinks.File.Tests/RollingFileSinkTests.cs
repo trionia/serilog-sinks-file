@@ -128,7 +128,7 @@ namespace Serilog.Sinks.File.Tests
                     Assert.True(System.IO.File.Exists(files[2]));
                 });
         }
-      
+
         [Fact]
         public void WhenRetentionCountAndArchivingHookIsSetOldFilesAreCopiedAndOriginalDeleted()
         {
@@ -308,6 +308,45 @@ namespace Serilog.Sinks.File.Tests
                 log.Dispose();
                 verifyWritten?.Invoke(verified);
                 Directory.Delete(folder, true);
+            }
+        }
+
+        [Fact]
+        public void FileShouldContinueRollingOnOverflow()
+        {
+            var fileName = Some.String() + ".txt";
+            var rolledFileName = string.Format("{0}_{1}.txt",
+                fileName.Substring(0, fileName.LastIndexOf('.')),
+                int.MaxValue.ToString());
+            using (var temp = new TempFolder())
+            {
+                var originalFilePath = Path.Combine(temp.Path, fileName);
+                var rolledFilePath = Path.Combine(temp.Path, rolledFileName);
+
+                using (var newFile = System.IO.File.Create(rolledFilePath))
+                {
+                    newFile.WriteByte(42);
+                    newFile.Flush();
+                }
+
+                Assert.True(System.IO.File.Exists(rolledFilePath));
+
+                using (var log = new LoggerConfiguration()
+                    .WriteTo.File(originalFilePath, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                        retainedFileCountLimit: 1)
+                    .CreateLogger())
+                {
+                    var infoEvent = Some.InformationEvent();
+                    // The following log.Write() will run the logger into an infinite loop.
+                    // The loop begins in RollingFileSink.cs+85; there is a while condition that will be always true.
+                    log.Write(infoEvent);
+
+                    var files = Directory.GetFiles(temp.Path).ToArray();
+
+                    Assert.Equal(1, files.Length);
+                    // Not sure if the name should be with or without a suffix
+                    Assert.True(files[0].EndsWith(fileName), files[0]);
+                }
             }
         }
     }
