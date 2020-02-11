@@ -336,7 +336,7 @@ namespace Serilog.Sinks.File.Tests
                         retainedFileCountLimit: 1)
                     .CreateLogger())
                 {
-                    var infoEvent = Some.InformationEvent();
+                    /*var infoEvent = Some.InformationEvent();
                     // The following log.Write() will run the logger into an infinite loop.
                     // The loop begins in RollingFileSink.cs+85; there is a while condition that will be always true.
                     log.Write(infoEvent);
@@ -345,7 +345,8 @@ namespace Serilog.Sinks.File.Tests
 
                     Assert.Equal(1, files.Length);
                     // Not sure if the name should be with or without a suffix
-                    Assert.True(files[0].EndsWith(fileName), files[0]);
+                    Assert.True(files[0].EndsWith(fileName), files[0]);*/
+                    throw new NotImplementedException();
                 }
             }
         }
