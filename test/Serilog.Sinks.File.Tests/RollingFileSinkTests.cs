@@ -315,9 +315,8 @@ namespace Serilog.Sinks.File.Tests
         public void FileShouldContinueRollingOnOverflow()
         {
             var fileName = Some.String() + ".txt";
-            var rolledFileName = string.Format("{0}_{1}.txt",
-                fileName.Substring(0, fileName.LastIndexOf('.')),
-                int.MaxValue.ToString());
+            var rolledFileName = string.Format("{0}_{1:000}.txt",
+                fileName.Substring(0, fileName.LastIndexOf('.')), int.MaxValue);
             using (var temp = new TempFolder())
             {
                 var originalFilePath = Path.Combine(temp.Path, fileName);
@@ -333,20 +332,24 @@ namespace Serilog.Sinks.File.Tests
 
                 using (var log = new LoggerConfiguration()
                     .WriteTo.File(originalFilePath, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
-                        retainedFileCountLimit: 1)
+                        retainedFileCountLimit: 3)
                     .CreateLogger())
                 {
-                    /*var infoEvent = Some.InformationEvent();
-                    // The following log.Write() will run the logger into an infinite loop.
-                    // The loop begins in RollingFileSink.cs+85; there is a while condition that will be always true.
-                    log.Write(infoEvent);
-
-                    var files = Directory.GetFiles(temp.Path).ToArray();
-
-                    Assert.Equal(1, files.Length);
-                    // Not sure if the name should be with or without a suffix
-                    Assert.True(files[0].EndsWith(fileName), files[0]);*/
                     throw new NotImplementedException();
+                    /*var infoEvent = Some.InformationEvent();
+                    for (int i = 0; i < 3; i++)
+                    {
+                        log.Write(infoEvent);
+                    }
+
+                    var files = Directory.GetFiles(temp.Path)
+                        .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+
+                    Assert.Equal(3, files.Length);
+                    Assert.True(files[0].EndsWith("_001.txt"), files[0]);
+                    Assert.True(files[1].EndsWith("_002.txt"), files[1]);
+                    Assert.True(files[2].EndsWith("_003.txt"), files[2]);*/
                 }
             }
         }
